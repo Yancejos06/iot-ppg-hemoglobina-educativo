@@ -1,0 +1,123 @@
+/*************************************************
+ * Proyecto IoT Educativo PPG – MAX30102 + ESP32 TTGO
+ * Autor: Kevin Josué Tomalá Yance
+ * Uso: Educativo (NO clínico)
+ *************************************************/
+
+#include <Wire.h>
+#include <WiFi.h>
+#include <PubSubClient.h>
+#include "MAX30105.h"
+
+MAX30105 particleSensor;
+
+/* ===================== CONFIGURACIÓN ===================== */
+#define SDA_PIN 21
+#define SCL_PIN 22
+
+#define SAMPLE_RATE 100       // Hz
+#define BUFFER_SIZE 100       // Ventana de filtrado
+#define MQTT_PORT 1883        // Sin TLS (educativo)
+
+/* ===================== WIFI ===================== */
+const char* ssid = "TU_RED_WIFI";
+const char* password = "TU_PASSWORD";
+
+/* ===================== MQTT ===================== */
+const char* mqtt_server = "broker.hivemq.com";
+const char* topic_bpm   = "iot/ppg/ttgo01/bpm";
+const char* topic_ratio = "iot/ppg/ttgo01/ratio";
+const char* topic_acdc  = "iot/ppg/ttgo01/acdc";
+
+/* ===================== CLIENTES ===================== */
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+/* ===================== BUFFERS ===================== */
+float irBuffer[BUFFER_SIZE];
+float redBuffer[BUFFER_SIZE];
+uint16_t bufferIndex = 0;
+
+/* ===================== VARIABLES ===================== */
+float irDC = 0, redDC = 0;
+float irAC = 0, redAC = 0;
+unsigned long lastSample = 0;
+unsigned long lastPublish = 0;
+
+/* ===================== FUNCIONES ===================== */
+
+void connectWiFi() {
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+  }
+}
+
+void connectMQTT() {
+  while (!client.connected()) {
+    client.connect("ESP32_TTGO_PPG");
+    delay(1000);
+  }
+}
+
+float mean(float *buffer) {
+  float sum = 0;
+  for (int i = 0; i < BUFFER_SIZE; i++) sum += buffer[i];
+  return sum / BUFFER_SIZE;
+}
+
+float peakToPeak(float *buffer, float dc) {
+  float maxVal = -1e6, minVal = 1e6;
+  for (int i = 0; i < BUFFER_SIZE; i++) {
+    float val = buffer[i] - dc;
+    if (val > maxVal) maxVal = val;
+    if (val < minVal) minVal = val;
+  }
+  return maxVal - minVal;
+}
+
+float estimateBPM(float *buffer) {
+  int peaks = 0;
+  for (int i = 1; i < BUFFER_SIZE - 1; i++) {
+    if (buffer[i] > buffer[i - 1] && buffer[i] > buffer[i + 1]) {
+      peaks++;
+      i += 10; // evitar dobles conteos
+    }
+  }
+  float seconds = BUFFER_SIZE / (float)SAMPLE_RATE;
+  return (peaks / seconds) * 60.0;
+}
+
+/* ===================== SETUP ===================== */
+void setup() {
+  Wire.begin(SDA_PIN, SCL_PIN);
+  Serial.begin(115200);
+
+  connectWiFi();
+  client.setServer(mqtt_server, MQTT_PORT);
+  connectMQTT();
+
+  if (!particleSensor.begin(Wire, I2C_SPEED_FAST)) {
+    while (1);
+  }
+
+  particleSensor.setup(
+    0x1F,   // LED brightness
+    4,      // sample average
+    2,      // mode: Red + IR
+    SAMPLE_RATE,
+    411,    // pulse width
+    4096    // ADC range
+  );
+}
+
+/* ===================== LOOP ===================== */
+void loop() {
+  if (!client.connected()) connectMQTT();
+  client.loop();
+
+  if (millis() - lastSample >= 1000 / SAMPLE_RATE) {
+    lastSample = millis();
+
+    float ir = particleSensor.getIR();
+    float red = par
