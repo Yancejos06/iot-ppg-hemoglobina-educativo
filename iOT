@@ -1,0 +1,17 @@
+iot-ppg-hemoglobina-educativo/
+│
+├── firmware/
+│   ├── esp32_ppg_iot.ino
+│
+├── simulation/
+│   ├── ppg_simulation.ipynb
+│
+├── diagrams/
+│   ├── arquitectura_iot.png
+│   ├── flujo_algoritmo.png
+│   ├── conexion_esp32_max30102.png
+│
+├── dashboard/
+│   ├── dashboard_example.png
+│
+└── README.md
