@@ -1,0 +1,24 @@
+# Sistema IoT Educativo PPG con ESP32
+
+Proyecto académico para el diseño de un sistema IoT educativo basado en ESP32 y sensor MAX30102 para la adquisición y procesamiento de señales fotopletismográficas (PPG).
+
+## Características
+- Procesamiento de señal PPG en edge
+- Comunicación MQTT
+- Dashboard IoT en tiempo real
+- Enfoque educativo (no clínico)
+
+## Hardware
+- ESP32 DevKit / TTGO
+- Sensor MAX30102
+
+## Software
+- Arduino IDE
+- MQTT (Puerto 1883)
+- Plataforma IoT Cloud (plan gratuito)
+
+## Seguridad
+Este proyecto utiliza MQTT sin TLS debido a su carácter educativo y uso en red local aislada. No se recomienda para producción.
+
+## Autor
+Tomalá Yance Kevin Josué
